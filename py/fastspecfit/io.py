@@ -428,7 +428,7 @@ class DESISpectra(TabulatedDESI):
     def select(self, redrockfiles, zmin=0.001, zmax=None, zwarnmax=None,
                targetids=None, firsttarget=0, ntargets=None,
                specprod_dir=None, use_quasarnet=True, redrockfile_prefix='redrock-',
-               specfile_prefix='coadd-', qnfile_prefix='qso_qn-'):
+               specfile_prefix='coadd-', qnfile_prefix='qso_qn-', custom_rrfile=False):
         """Select targets for fitting and gather the necessary spectroscopic metadata.
 
         Parameters
@@ -466,6 +466,13 @@ class DESISpectra(TabulatedDESI):
             Redrock file(s). Defaults to `coadd-`.
         qnfile_prefix : str
             Prefix of the QuasarNet afterburner file. Defaults to `qso_qn-`.
+        custom_rrfile : `bool`
+            If True, use the specprod_dir, survey, and program from the
+            custom redrock file to create the paths to the coadd files. If False,
+            swap the redrockfile_prefix with the specfile_prefix. Defaults to
+            False. NOTE: must provide a specprod_dir and can only provide one
+            redrockfile!
+
 
         Attributes
         ----------
@@ -518,6 +525,27 @@ class DESISpectra(TabulatedDESI):
             errmsg = 'No redrockfiles found!'
             log.warning(errmsg)
             raise ValueError(errmsg)
+
+        if custom_rrfile:
+            if specprod_dir is None:
+                raise ValueError('Must provide specprod_dir to find coadds')
+            if len(redrockfiles) > 1:
+                raise ValueError('Known Limitation: find_coadds can only be used on exactly one custom redrock file input')
+            if targetids is not None:
+                log.warning('Since this is a custom redrock file, we are assuming you want every target in it!')
+            
+            # read in the redrock file to parse the columns
+            rrfile = Table(fitsio.read(f, 'REDSHIFTS', columns=['SURVEY', 'PROGRAM', 'HEALPIX']))
+            s = rrfile['SURVEY']
+            p = rrfile['PROGRAM']
+            h = rrfile['HEALPIX']
+
+            dirbase = os.path.join(self.redux_dir, specprod_dir, 'healpix')
+
+            # get the redrockfiles from the computed specfiles
+            # this will allow the redrock file replace later to find the correct path
+            redrockfiles = [os.path.join(dirbase, s[ii], p[ii], str(h)[:,2], h[ii], f'redrock-{s[ii]}-{p[ii]}-{h[ii]}.fits') for ii in range(len(rrfile))]
+
 
         # Should we not sort...?
         #redrockfiles = np.array(set(np.atleast_1d(redrockfiles)))

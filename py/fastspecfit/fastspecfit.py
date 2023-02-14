@@ -109,7 +109,8 @@ def parse(options=None, log=None):
     parser.add_argument('--dr9dir', type=str, default=None, help='Optional directory name for the DR9 photometry.')
     parser.add_argument('--specproddir', type=str, default=None, help='Optional directory name for the spectroscopic production.')
     parser.add_argument('--verbose', action='store_true', help='Be verbose (for debugging purposes).')
-
+    parser.add_argument('--custom-rrfile', default=False, action='store_true', dest='customrrfile', help='Set to true if using exactly 1 custom redrock file. If True, finds the coadds using the redrockfile(s) rather than using the specfile-prefix')
+    
     if log is None:
         from desiutil.log import get_logger
         log = get_logger()
@@ -163,7 +164,7 @@ def fastspec(fastphot=False, args=None, comm=None, verbose=False):
     Spec.select(args.redrockfiles, firsttarget=args.firsttarget, targetids=targetids,
                 ntargets=args.ntargets, redrockfile_prefix=args.redrockfile_prefix,
                 specfile_prefix=args.specfile_prefix, qnfile_prefix=args.qnfile_prefix,
-                specprod_dir=args.specproddir)
+                specprod_dir=args.specproddir, custom_rrfile=args.customrrfile)
     if len(Spec.specfiles) == 0:
         return
 
